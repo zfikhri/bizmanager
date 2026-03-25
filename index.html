@@ -91,7 +91,8 @@
                 
                 sum_desc: "Monthly Profit Summary Report. Automatically calculated from Sales, COGS, and Expenses sheets.", month: "Month", gross_profit: "Gross Profit", net_profit: "Net Profit", total_exp: "Total Expenses", total_cogs: "Total COGS", no_data: "No data available to generate summary.",
                 
-                kpi_sales: "Total Sales (Income)", roi: "ROI %", sales_by_prod: "Sales by Product", exp_breakdown: "Expenses Breakdown", daily_trend: "Daily Sales Trend", walk_in: "Walk-in"
+                kpi_sales: "Total Sales (Income)", roi: "ROI %", sales_by_prod: "Sales by Product", exp_breakdown: "Expenses Breakdown", daily_trend: "Daily Sales Trend", walk_in: "Walk-in",
+                filter_all: "All Time", filter_today: "Today", filter_week: "This Week", filter_month: "This Month", filter_custom: "Custom", start_date: "Start Date", end_date: "End Date"
             },
             ms: {
                 role: "Peranan", admin: "Admin", staff: "Staf", restricted: "Mod Akses Terhad",
@@ -111,7 +112,8 @@
                 
                 sum_desc: "Laporan Ringkasan Keuntungan bulanan. Dikira secara automatik dari helaian Jualan, COGS, dan Perbelanjaan.", month: "Bulan", gross_profit: "Untung Kasar", net_profit: "Untung Bersih", total_exp: "Jumlah Perbelanjaan", total_cogs: "Jumlah COGS", no_data: "Tiada data untuk menjana ringkasan.",
                 
-                kpi_sales: "Jumlah Jualan (Pendapatan)", roi: "ROI %", sales_by_prod: "Jualan Mengikut Produk", exp_breakdown: "Pecahan Perbelanjaan", daily_trend: "Trend Jualan Harian", walk_in: "Biasa (Walk-in)"
+                kpi_sales: "Jumlah Jualan (Pendapatan)", roi: "ROI %", sales_by_prod: "Jualan Mengikut Produk", exp_breakdown: "Pecahan Perbelanjaan", daily_trend: "Trend Jualan Harian", walk_in: "Biasa (Walk-in)",
+                filter_all: "Semua Masa", filter_today: "Hari Ini", filter_week: "Minggu Ini", filter_month: "Bulan Ini", filter_custom: "Pilihan", start_date: "Tarikh Mula", end_date: "Tarikh Akhir"
             }
         };
 
@@ -132,12 +134,12 @@
             // Helpers for formatting
             const formatRM = (num) => `RM ${parseFloat(num).toFixed(2)}`;
 
-            // Restrict access
+            // Restrict access dynamically when role changes
             useEffect(() => {
                 if (role === 'Staff' && ['dashboard', 'summary', 'cogs'].includes(activeTab)) {
                     setActiveTab('sales');
                 }
-            }, [role]);
+            }, [role, activeTab]);
 
             const tabs = [
                 { id: 'dashboard', label: t('dashboard'), icon: Icons.Dashboard, adminOnly: true },
@@ -223,7 +225,7 @@
                         </header>
 
                         {/* Dynamic View */}
-                        <main className="flex-1 overflow-auto p-4 md:p-6 bg-gray-50">
+                        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6 bg-gray-50">
                             {activeTab === 'dashboard' && <DashboardView sales={sales} expenses={expenses} cogs={cogs} formatRM={formatRM} t={t} />}
                             {activeTab === 'sales' && <SalesView sales={sales} setSales={setSales} cogs={cogs} formatRM={formatRM} role={role} t={t} />}
                             {activeTab === 'expenses' && <ExpensesView expenses={expenses} setExpenses={setExpenses} formatRM={formatRM} role={role} t={t} />}
@@ -243,7 +245,7 @@
                                         className={`flex-1 flex flex-col items-center justify-center space-y-1 transition-colors ${activeTab === tab.id ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
                                     >
                                         <tab.icon className="w-6 h-6" />
-                                        <span className="text-[9px] font-semibold truncate w-full text-center px-1 leading-tight" style={{maxWidth: '65px'}}>
+                                        <span className="text-[10px] font-semibold truncate w-full text-center px-1 leading-tight" style={{maxWidth: '70px'}}>
                                             {tab.label.split(' ')[0]} {/* Shorten label for mobile bottom nav */}
                                         </span>
                                     </button>
@@ -296,58 +298,58 @@
                         <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
                             <h3 className="text-lg font-semibold mb-4 text-gray-800">{t('new_sale')}</h3>
                             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('date')}</label><input required type="date" className="w-full border rounded p-2 text-sm" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('order_id')}</label><input required type="text" placeholder="e.g. ORD-004" className="w-full border rounded p-2 text-sm" value={formData.orderId} onChange={e => setFormData({...formData, orderId: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('date')}</label><input required type="date" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('order_id')}</label><input required type="text" placeholder="e.g. ORD-004" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.orderId} onChange={e => setFormData({...formData, orderId: e.target.value})} /></div>
                                 <div>
-                                    <label className="block text-xs text-gray-500 mb-1">{t('product')}</label>
-                                    <select required className="w-full border rounded p-2 text-sm" value={formData.product} onChange={e => autoFillPrice(e.target.value)}>
+                                    <label className="block text-xs text-gray-500 mb-1 font-medium">{t('product')}</label>
+                                    <select required className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.product} onChange={e => autoFillPrice(e.target.value)}>
                                         <option value="">{t('select_product')}</option>
                                         {cogs.map(c => <option key={c.id} value={c.product}>{c.product}</option>)}
                                     </select>
                                 </div>
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('category')}</label><input required type="text" className="w-full border rounded p-2 text-sm" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} /></div>
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('qty')}</label><input required type="number" min="1" className="w-full border rounded p-2 text-sm" value={formData.qty} onChange={e => setFormData({...formData, qty: parseInt(e.target.value)})} /></div>
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('selling_price')}</label><input required type="number" step="0.01" className="w-full border rounded p-2 text-sm" value={formData.sellingPrice} onChange={e => setFormData({...formData, sellingPrice: parseFloat(e.target.value)})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('category')}</label><input required type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('qty')}</label><input required type="number" min="1" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.qty} onChange={e => setFormData({...formData, qty: parseInt(e.target.value)})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('selling_price')}</label><input required type="number" step="0.01" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.sellingPrice} onChange={e => setFormData({...formData, sellingPrice: parseFloat(e.target.value)})} /></div>
                                 <div>
-                                    <label className="block text-xs text-gray-500 mb-1">{t('platform')}</label>
-                                    <select className="w-full border rounded p-2 text-sm" value={formData.platform} onChange={e => setFormData({...formData, platform: e.target.value})}>
+                                    <label className="block text-xs text-gray-500 mb-1 font-medium">{t('platform')}</label>
+                                    <select className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.platform} onChange={e => setFormData({...formData, platform: e.target.value})}>
                                         <option>{t('walk_in')}</option><option>FoodPanda</option><option>GrabFood</option><option>ShopeeFood</option>
                                     </select>
                                 </div>
-                                <div className="flex items-end"><button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded text-sm font-medium">{t('save_record')}</button></div>
+                                <div className="flex items-end"><button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded-md text-sm font-medium transition-colors">{t('save_record')}</button></div>
                             </form>
                         </div>
                     )}
 
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                        <table className="w-full text-left border-collapse min-w-[700px]">
                             <thead>
                                 <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500">
-                                    <th className="p-3">{t('date')}</th>
-                                    <th className="p-3">{t('order_id')}</th>
-                                    <th className="p-3">{t('product')}</th>
-                                    <th className="p-3 text-center">{t('qty')}</th>
-                                    <th className="p-3 text-right">{t('price')}</th>
-                                    <th className="p-3 text-right">{t('total_sales')}</th>
-                                    <th className="p-3 text-center">{t('platform')}</th>
-                                    {role === 'Admin' && <th className="p-3 text-right bg-yellow-50">{t('cost_unit')}</th>}
-                                    {role === 'Admin' && <th className="p-3 text-right bg-yellow-50">{t('total_cost')}</th>}
-                                    {role === 'Admin' && <th className="p-3 text-right bg-green-50">{t('profit')}</th>}
+                                    <th className="p-4">{t('date')}</th>
+                                    <th className="p-4">{t('order_id')}</th>
+                                    <th className="p-4">{t('product')}</th>
+                                    <th className="p-4 text-center">{t('qty')}</th>
+                                    <th className="p-4 text-right">{t('price')}</th>
+                                    <th className="p-4 text-right">{t('total_sales')}</th>
+                                    <th className="p-4 text-center">{t('platform')}</th>
+                                    {role === 'Admin' && <th className="p-4 text-right bg-yellow-50">{t('cost_unit')}</th>}
+                                    {role === 'Admin' && <th className="p-4 text-right bg-yellow-50">{t('total_cost')}</th>}
+                                    {role === 'Admin' && <th className="p-4 text-right bg-green-50">{t('profit')}</th>}
                                 </tr>
                             </thead>
                             <tbody className="text-sm divide-y divide-gray-100">
                                 {enrichedSales.map((s) => (
                                     <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="p-3 whitespace-nowrap">{s.date}</td>
-                                        <td className="p-3 font-medium text-gray-700">{s.orderId}</td>
-                                        <td className="p-3">{s.product}</td>
-                                        <td className="p-3 text-center">{s.qty}</td>
-                                        <td className="p-3 text-right">{formatRM(s.sellingPrice)}</td>
-                                        <td className="p-3 text-right font-semibold text-blue-600">{formatRM(s.totalSales)}</td>
-                                        <td className="p-3 text-center"><span className="px-2 py-1 bg-gray-100 rounded-full text-xs">{s.platform}</span></td>
-                                        {role === 'Admin' && <td className="p-3 text-right text-gray-500">{formatRM(s.costPerUnit)}</td>}
-                                        {role === 'Admin' && <td className="p-3 text-right text-gray-500">{formatRM(s.totalCost)}</td>}
-                                        {role === 'Admin' && <td className="p-3 text-right font-semibold text-green-600">{formatRM(s.profit)}</td>}
+                                        <td className="p-4 whitespace-nowrap">{s.date}</td>
+                                        <td className="p-4 font-medium text-gray-700">{s.orderId}</td>
+                                        <td className="p-4">{s.product}</td>
+                                        <td className="p-4 text-center">{s.qty}</td>
+                                        <td className="p-4 text-right">{formatRM(s.sellingPrice)}</td>
+                                        <td className="p-4 text-right font-semibold text-blue-600">{formatRM(s.totalSales)}</td>
+                                        <td className="p-4 text-center"><span className="px-2 py-1 bg-gray-100 rounded-full text-xs">{s.platform}</span></td>
+                                        {role === 'Admin' && <td className="p-4 text-right text-gray-500">{formatRM(s.costPerUnit)}</td>}
+                                        {role === 'Admin' && <td className="p-4 text-right text-gray-500">{formatRM(s.totalCost)}</td>}
+                                        {role === 'Admin' && <td className="p-4 text-right font-semibold text-green-600">{formatRM(s.profit)}</td>}
                                     </tr>
                                 ))}
                             </tbody>
@@ -371,7 +373,7 @@
                 if (file) {
                     const reader = new FileReader();
                     reader.onloadend = () => {
-                        setFormData({ ...formData, receipt: reader.result }); // Save Base64 for demo
+                        setFormData({ ...formData, receipt: reader.result });
                     };
                     reader.readAsDataURL(file);
                 }
@@ -397,61 +399,61 @@
                         <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
                             <h3 className="text-lg font-semibold mb-4 text-gray-800">{t('new_exp')}</h3>
                             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('date')}</label><input required type="date" className="w-full border rounded p-2 text-sm" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('date')}</label><input required type="date" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
                                 <div>
-                                    <label className="block text-xs text-gray-500 mb-1">{t('category')}</label>
-                                    <select className="w-full border rounded p-2 text-sm" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
+                                    <label className="block text-xs text-gray-500 mb-1 font-medium">{t('category')}</label>
+                                    <select className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
                                         {categories.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                 </div>
-                                <div className="md:col-span-2"><label className="block text-xs text-gray-500 mb-1">{t('desc')}</label><input required type="text" className="w-full border rounded p-2 text-sm" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} /></div>
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('amount')}</label><input required type="number" step="0.01" className="w-full border rounded p-2 text-sm" value={formData.amount} onChange={e => setFormData({...formData, amount: parseFloat(e.target.value)})} /></div>
+                                <div className="md:col-span-2"><label className="block text-xs text-gray-500 mb-1 font-medium">{t('desc')}</label><input required type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('amount')}</label><input required type="number" step="0.01" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.amount} onChange={e => setFormData({...formData, amount: parseFloat(e.target.value)})} /></div>
                                 <div>
-                                    <label className="block text-xs text-gray-500 mb-1">{t('type')}</label>
-                                    <select className="w-full border rounded p-2 text-sm" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+                                    <label className="block text-xs text-gray-500 mb-1 font-medium">{t('type')}</label>
+                                    <select className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
                                         <option value="Fixed">{t('fixed')}</option><option value="Variable">{t('variable')}</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs text-gray-500 mb-1">{t('method')}</label>
-                                    <select className="w-full border rounded p-2 text-sm" value={formData.method} onChange={e => setFormData({...formData, method: e.target.value})}>
+                                    <label className="block text-xs text-gray-500 mb-1 font-medium">{t('method')}</label>
+                                    <select className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.method} onChange={e => setFormData({...formData, method: e.target.value})}>
                                         <option value="Cash">{t('cash')}</option><option value="Bank Transfer">{t('bank')}</option><option value="Credit Card">{t('credit')}</option><option value="Cheque">{t('cheque')}</option>
                                     </select>
                                 </div>
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('supplier')}</label><input type="text" className="w-full border rounded p-2 text-sm" value={formData.supplier} onChange={e => setFormData({...formData, supplier: e.target.value})} /></div>
-                                <div className="md:col-span-2"><label className="block text-xs text-gray-500 mb-1">{t('notes')}</label><input type="text" className="w-full border rounded p-2 text-sm" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('supplier')}</label><input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.supplier} onChange={e => setFormData({...formData, supplier: e.target.value})} /></div>
+                                <div className="md:col-span-2"><label className="block text-xs text-gray-500 mb-1 font-medium">{t('notes')}</label><input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} /></div>
                                 <div className="md:col-span-2">
-                                    <label className="block text-xs text-gray-500 mb-1">{t('upload_receipt')}</label>
-                                    <input type="file" accept="image/*,.pdf" onChange={handleFileChange} className="w-full border rounded p-1.5 text-sm file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                                    <label className="block text-xs text-gray-500 mb-1 font-medium">{t('upload_receipt')}</label>
+                                    <input type="file" accept="image/*,.pdf" onChange={handleFileChange} className="w-full border border-gray-300 rounded-md p-1.5 text-sm file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 outline-none" />
                                 </div>
-                                <div className="col-span-full mt-2"><button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white p-2 rounded text-sm font-medium">{t('save_exp')}</button></div>
+                                <div className="col-span-full mt-2"><button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white p-2 rounded-md text-sm font-medium transition-colors">{t('save_exp')}</button></div>
                             </form>
                         </div>
                     )}
 
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                        <table className="w-full text-left border-collapse min-w-[700px]">
                             <thead>
                                 <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500">
-                                    <th className="p-3">{t('date')}</th>
-                                    <th className="p-3">{t('category')}</th>
-                                    <th className="p-3">{t('desc')}</th>
-                                    <th className="p-3">{t('supplier')}</th>
-                                    <th className="p-3 text-right">{t('amount')}</th>
-                                    <th className="p-3 text-center">{t('type')}</th>
-                                    <th className="p-3 text-center">{t('receipt')}</th>
+                                    <th className="p-4">{t('date')}</th>
+                                    <th className="p-4">{t('category')}</th>
+                                    <th className="p-4">{t('desc')}</th>
+                                    <th className="p-4">{t('supplier')}</th>
+                                    <th className="p-4 text-right">{t('amount')}</th>
+                                    <th className="p-4 text-center">{t('type')}</th>
+                                    <th className="p-4 text-center">{t('receipt')}</th>
                                 </tr>
                             </thead>
                             <tbody className="text-sm divide-y divide-gray-100">
                                 {expenses.map((e) => (
                                     <tr key={e.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="p-3 whitespace-nowrap">{e.date}</td>
-                                        <td className="p-3"><span className="px-2 py-1 bg-red-50 text-red-700 rounded-full text-xs font-medium">{e.category}</span></td>
-                                        <td className="p-3">{e.description}</td>
-                                        <td className="p-3 text-gray-600">{e.supplier}</td>
-                                        <td className="p-3 text-right font-semibold text-red-600">{formatRM(e.amount)}</td>
-                                        <td className="p-3 text-center text-xs text-gray-500">{t(e.type.toLowerCase()) || e.type}</td>
-                                        <td className="p-3 text-center">
+                                        <td className="p-4 whitespace-nowrap">{e.date}</td>
+                                        <td className="p-4"><span className="px-2 py-1 bg-red-50 text-red-700 rounded-full text-xs font-medium">{e.category}</span></td>
+                                        <td className="p-4">{e.description}</td>
+                                        <td className="p-4 text-gray-600">{e.supplier}</td>
+                                        <td className="p-4 text-right font-semibold text-red-600">{formatRM(e.amount)}</td>
+                                        <td className="p-4 text-center text-xs text-gray-500">{t(e.type.toLowerCase()) || e.type}</td>
+                                        <td className="p-4 text-center">
                                             {e.receipt ? (
                                                 <button onClick={() => setViewReceipt(e.receipt)} className="text-blue-600 hover:underline text-xs flex items-center justify-center w-full">
                                                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg> {t('view')}
@@ -467,12 +469,12 @@
                     {/* Receipt Modal */}
                     {viewReceipt && (
                         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                            <div className="bg-white p-4 rounded-lg max-w-lg w-full relative">
-                                <button onClick={() => setViewReceipt(null)} className="absolute top-2 right-2 text-gray-500 hover:text-black">✖</button>
+                            <div className="bg-white p-4 rounded-lg max-w-lg w-full relative shadow-xl">
+                                <button onClick={() => setViewReceipt(null)} className="absolute top-3 right-3 text-gray-500 hover:text-black bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center">✖</button>
                                 <h3 className="text-lg font-semibold mb-4 border-b pb-2">{t('receipt')}</h3>
-                                <div className="flex justify-center bg-gray-100 p-2 rounded border">
+                                <div className="flex justify-center bg-gray-100 p-2 rounded border overflow-auto max-h-[70vh]">
                                     {viewReceipt.startsWith('data:image') ? 
-                                        <img src={viewReceipt} alt="Receipt" className="max-h-96 object-contain" /> :
+                                        <img src={viewReceipt} alt="Receipt" className="max-w-full h-auto object-contain" /> :
                                         <div className="p-10 text-center text-gray-500">Document Uploaded (PDF format not previewable in this demo)</div>
                                     }
                                 </div>
@@ -507,17 +509,17 @@
                     {showForm && (
                         <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 mb-4">
                             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('prod_name')}</label><input required type="text" className="w-full border rounded p-2 text-sm" value={formData.product} onChange={e => setFormData({...formData, product: e.target.value})} /></div>
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('main_ing')}</label><input required type="text" className="w-full border rounded p-2 text-sm" placeholder="e.g. Flour, Sugar, Egg" value={formData.ingredient} onChange={e => setFormData({...formData, ingredient: e.target.value})} /></div>
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('total_cost_rm')}</label><input required type="number" step="0.01" className="w-full border rounded p-2 text-sm" value={formData.cost} onChange={e => setFormData({...formData, cost: parseFloat(e.target.value)})} /></div>
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('portion')}</label><input required type="text" className="w-full border rounded p-2 text-sm" placeholder="e.g. 1 Plate" value={formData.portion} onChange={e => setFormData({...formData, portion: e.target.value})} /></div>
-                                <div className="col-span-full mt-2"><button type="submit" className="w-full bg-yellow-600 hover:bg-yellow-700 text-white p-2 rounded text-sm font-medium">{t('save_cogs')}</button></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('prod_name')}</label><input required type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-yellow-500 outline-none" value={formData.product} onChange={e => setFormData({...formData, product: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('main_ing')}</label><input required type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="e.g. Flour, Sugar, Egg" value={formData.ingredient} onChange={e => setFormData({...formData, ingredient: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('total_cost_rm')}</label><input required type="number" step="0.01" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-yellow-500 outline-none" value={formData.cost} onChange={e => setFormData({...formData, cost: parseFloat(e.target.value)})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('portion')}</label><input required type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-yellow-500 outline-none" placeholder="e.g. 1 Plate" value={formData.portion} onChange={e => setFormData({...formData, portion: e.target.value})} /></div>
+                                <div className="col-span-full mt-2"><button type="submit" className="w-full bg-yellow-600 hover:bg-yellow-700 text-white p-2 rounded-md text-sm font-medium transition-colors">{t('save_cogs')}</button></div>
                             </form>
                         </div>
                     )}
 
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <table className="w-full text-left border-collapse">
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+                        <table className="w-full text-left border-collapse min-w-[500px]">
                             <thead>
                                 <tr className="bg-yellow-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-700">
                                     <th className="p-4">{t('prod_name')}</th>
@@ -538,7 +540,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mt-4">
+                    <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mt-4 rounded-r-md">
                         <div className="flex">
                             <div className="flex-shrink-0"><svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></div>
                             <div className="ml-3"><p className="text-sm text-blue-700">{t('cogs_info')}</p></div>
@@ -583,45 +585,45 @@
                     {showForm && (
                         <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
                             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('item_name')}</label><input required type="text" className="w-full border rounded p-2 text-sm" value={formData.item} onChange={e => setFormData({...formData, item: e.target.value})} /></div>
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('open_stock')}</label><input required type="number" className="w-full border rounded p-2 text-sm" value={formData.opening} onChange={e => setFormData({...formData, opening: parseInt(e.target.value)})} /></div>
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('stock_in')}</label><input required type="number" className="w-full border rounded p-2 text-sm" value={formData.in} onChange={e => setFormData({...formData, in: parseInt(e.target.value)})} /></div>
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('stock_out')}</label><input required type="number" className="w-full border rounded p-2 text-sm" value={formData.out} onChange={e => setFormData({...formData, out: parseInt(e.target.value)})} /></div>
-                                <div><label className="block text-xs text-gray-500 mb-1">{t('unit_cost_rm')}</label><input required type="number" step="0.01" className="w-full border rounded p-2 text-sm" value={formData.unitCost} onChange={e => setFormData({...formData, unitCost: parseFloat(e.target.value)})} /></div>
-                                <div className="col-span-full"><button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white p-2 rounded text-sm font-medium">{t('save_item')}</button></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('item_name')}</label><input required type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none" value={formData.item} onChange={e => setFormData({...formData, item: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('open_stock')}</label><input required type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none" value={formData.opening} onChange={e => setFormData({...formData, opening: parseInt(e.target.value)})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('stock_in')}</label><input required type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none" value={formData.in} onChange={e => setFormData({...formData, in: parseInt(e.target.value)})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('stock_out')}</label><input required type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none" value={formData.out} onChange={e => setFormData({...formData, out: parseInt(e.target.value)})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1 font-medium">{t('unit_cost_rm')}</label><input required type="number" step="0.01" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none" value={formData.unitCost} onChange={e => setFormData({...formData, unitCost: parseFloat(e.target.value)})} /></div>
+                                <div className="col-span-full"><button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-md text-sm font-medium transition-colors">{t('save_item')}</button></div>
                             </form>
                         </div>
                     )}
 
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                        <table className="w-full text-left border-collapse min-w-[700px]">
                             <thead>
                                 <tr className="bg-purple-50 border-b border-gray-200 text-xs uppercase tracking-wider text-purple-800">
-                                    <th className="p-3">{t('item_name')}</th>
-                                    <th className="p-3 text-center">{t('open_stock')}</th>
-                                    <th className="p-3 text-center text-green-700">{t('stock_in')}</th>
-                                    <th className="p-3 text-center text-red-700">{t('stock_out')}</th>
-                                    <th className="p-3 text-center bg-purple-100 rounded-t">{t('balance')}</th>
-                                    <th className="p-3 text-right">{t('unit_cost')}</th>
-                                    <th className="p-3 text-right">{t('total_value')}</th>
+                                    <th className="p-4">{t('item_name')}</th>
+                                    <th className="p-4 text-center">{t('open_stock')}</th>
+                                    <th className="p-4 text-center text-green-700">{t('stock_in')}</th>
+                                    <th className="p-4 text-center text-red-700">{t('stock_out')}</th>
+                                    <th className="p-4 text-center bg-purple-100 rounded-t">{t('balance')}</th>
+                                    <th className="p-4 text-right">{t('unit_cost')}</th>
+                                    <th className="p-4 text-right">{t('total_value')}</th>
                                 </tr>
                             </thead>
                             <tbody className="text-sm divide-y divide-gray-100">
                                 {enrichedInventory.map((item) => (
                                     <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="p-3 font-medium text-gray-800">{item.item}</td>
-                                        <td className="p-3 text-center text-gray-500">{item.opening}</td>
-                                        <td className="p-3 text-center">
+                                        <td className="p-4 font-medium text-gray-800">{item.item}</td>
+                                        <td className="p-4 text-center text-gray-500">{item.opening}</td>
+                                        <td className="p-4 text-center">
                                             <input type="number" className="w-16 border rounded text-center p-1 text-sm outline-none focus:ring-1 focus:ring-green-500 bg-green-50 text-green-800 font-medium" value={item.in} onChange={(e) => updateStock(item.id, 'in', e.target.value)} />
                                         </td>
-                                        <td className="p-3 text-center">
+                                        <td className="p-4 text-center">
                                             <input type="number" className="w-16 border rounded text-center p-1 text-sm outline-none focus:ring-1 focus:ring-red-500 bg-red-50 text-red-800 font-medium" value={item.out} onChange={(e) => updateStock(item.id, 'out', e.target.value)} />
                                         </td>
-                                        <td className={`p-3 text-center font-bold bg-purple-50/50 ${item.balance <= 10 ? 'text-red-600' : 'text-purple-700'}`}>
+                                        <td className={`p-4 text-center font-bold bg-purple-50/50 ${item.balance <= 10 ? 'text-red-600' : 'text-purple-700'}`}>
                                             {item.balance} {item.balance <= 10 && '⚠️'}
                                         </td>
-                                        <td className="p-3 text-right text-gray-500">{formatRM(item.unitCost)}</td>
-                                        <td className="p-3 text-right font-semibold text-gray-700">{formatRM(item.totalValue)}</td>
+                                        <td className="p-4 text-right text-gray-500">{formatRM(item.unitCost)}</td>
+                                        <td className="p-4 text-right font-semibold text-gray-700">{formatRM(item.totalValue)}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -676,8 +678,8 @@
                 <div className="space-y-4">
                     <p className="text-gray-600 text-sm mb-6">{t('sum_desc')}</p>
                     
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <table className="w-full text-left border-collapse">
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+                        <table className="w-full text-left border-collapse min-w-[600px]">
                             <thead>
                                 <tr className="bg-indigo-50 border-b border-gray-200 text-xs uppercase tracking-wider text-indigo-900">
                                     <th className="p-4">{t('month')}</th>
@@ -720,13 +722,63 @@
             const barInstance = useRef(null);
             const lineInstance = useRef(null);
 
+            // Filter States
+            const [dateFilter, setDateFilter] = useState('all');
+            const [startDate, setStartDate] = useState('');
+            const [endDate, setEndDate] = useState('');
+
+            // Date Helper
+            const getLocalYYYYMMDD = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            const isDateInRange = (dateStr) => {
+                if (dateFilter === 'all') return true;
+
+                const todayDate = new Date();
+                const todayStr = getLocalYYYYMMDD(todayDate);
+
+                if (dateFilter === 'today') {
+                    return dateStr === todayStr;
+                }
+
+                if (dateFilter === 'week') {
+                    const startOfWeek = new Date(todayDate);
+                    startOfWeek.setDate(todayDate.getDate() - todayDate.getDay()); // Sunday
+                    const endOfWeek = new Date(todayDate);
+                    endOfWeek.setDate(todayDate.getDate() - todayDate.getDay() + 6); // Saturday
+                    return dateStr >= getLocalYYYYMMDD(startOfWeek) && dateStr <= getLocalYYYYMMDD(endOfWeek);
+                }
+
+                if (dateFilter === 'month') {
+                    const monthStr = todayStr.substring(0, 7); // YYYY-MM
+                    return dateStr.startsWith(monthStr);
+                }
+
+                if (dateFilter === 'custom') {
+                    if (startDate && endDate) return dateStr >= startDate && dateStr <= endDate;
+                    if (startDate) return dateStr >= startDate;
+                    if (endDate) return dateStr <= endDate;
+                    return true;
+                }
+
+                return true;
+            };
+
+            // Filter Data Based on Date Selection
+            const filteredSales = useMemo(() => sales.filter(s => isDateInRange(s.date)), [sales, dateFilter, startDate, endDate]);
+            const filteredExpenses = useMemo(() => expenses.filter(e => isDateInRange(e.date)), [expenses, dateFilter, startDate, endDate]);
+
             // Calculate KPIs
-            const totalSales = useMemo(() => sales.reduce((acc, s) => acc + (s.qty * s.sellingPrice), 0), [sales]);
-            const totalExpenses = useMemo(() => expenses.reduce((acc, e) => acc + e.amount, 0), [expenses]);
-            const totalCogs = useMemo(() => sales.reduce((acc, s) => {
+            const totalSales = useMemo(() => filteredSales.reduce((acc, s) => acc + (s.qty * s.sellingPrice), 0), [filteredSales]);
+            const totalExpenses = useMemo(() => filteredExpenses.reduce((acc, e) => acc + e.amount, 0), [filteredExpenses]);
+            const totalCogs = useMemo(() => filteredSales.reduce((acc, s) => {
                 const cost = cogs.find(c => c.product === s.product)?.cost || 0;
                 return acc + (s.qty * cost);
-            }, 0), [sales, cogs]);
+            }, 0), [filteredSales, cogs]);
             
             const grossProfit = totalSales - totalCogs;
             const netProfit = grossProfit - totalExpenses;
@@ -740,7 +792,7 @@
 
                 // 1. Prepare Pie Chart Data (Expenses by Category)
                 const expCats = {};
-                expenses.forEach(e => {
+                filteredExpenses.forEach(e => {
                     expCats[e.category] = (expCats[e.category] || 0) + e.amount;
                 });
 
@@ -761,7 +813,7 @@
 
                 // 2. Prepare Bar Chart Data (Sales by Product)
                 const prodSales = {};
-                sales.forEach(s => {
+                filteredSales.forEach(s => {
                     prodSales[s.product] = (prodSales[s.product] || 0) + (s.qty * s.sellingPrice);
                 });
 
@@ -783,7 +835,7 @@
 
                 // 3. Prepare Line Chart Data (Daily Sales Trend)
                 const dailyData = {};
-                sales.forEach(s => {
+                filteredSales.forEach(s => {
                     dailyData[s.date] = (dailyData[s.date] || 0) + (s.qty * s.sellingPrice);
                 });
                 const sortedDates = Object.keys(dailyData).sort();
@@ -808,10 +860,31 @@
                     });
                 }
 
-            }, [sales, expenses, cogs, t]); // Re-render charts when data changes
+            }, [filteredSales, filteredExpenses, cogs, t]); // Re-render charts when data changes
+
+            const btnClass = (active) => `px-3 py-1.5 text-xs font-semibold rounded-md whitespace-nowrap transition-all ${active ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`;
 
             return (
                 <div className="space-y-6">
+                    {/* Date Filters */}
+                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+                        <div className="flex space-x-2 overflow-x-auto pb-1 xl:pb-0 w-full xl:w-auto scrollbar-hide">
+                            <button onClick={() => setDateFilter('all')} className={btnClass(dateFilter === 'all')}>{t('filter_all')}</button>
+                            <button onClick={() => setDateFilter('today')} className={btnClass(dateFilter === 'today')}>{t('filter_today')}</button>
+                            <button onClick={() => setDateFilter('week')} className={btnClass(dateFilter === 'week')}>{t('filter_week')}</button>
+                            <button onClick={() => setDateFilter('month')} className={btnClass(dateFilter === 'month')}>{t('filter_month')}</button>
+                            <button onClick={() => setDateFilter('custom')} className={btnClass(dateFilter === 'custom')}>{t('filter_custom')}</button>
+                        </div>
+                        
+                        {dateFilter === 'custom' && (
+                            <div className="flex items-center space-x-2 w-full xl:w-auto text-sm animate-fade-in-down">
+                                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="border border-gray-300 rounded-md p-1.5 focus:ring-2 focus:ring-blue-500 outline-none w-full" />
+                                <span className="text-gray-400 font-bold">-</span>
+                                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="border border-gray-300 rounded-md p-1.5 focus:ring-2 focus:ring-blue-500 outline-none w-full" />
+                            </div>
+                        )}
+                    </div>
+
                     {/* KPIs */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex flex-col">
