@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Management System</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .tab-active { background-color: #e5e7eb; border-left: 4px solid #3b82f6; color: #1f2937; font-weight: 600; }
+        .tab-inactive { color: #4b5563; }
+        .tab-inactive:hover { background-color: #f3f4f6; color: #1f2937; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- MOCK DATA INITIATION ---
+        const initialCogs = [
+            { id: 1, product: 'Nasi Lemak Ayam', ingredient: 'Beras, Ayam, Sambal', cost: 4.50, portion: '1 Piring' },
+            { id: 2, product: 'Milo Ais', ingredient: 'Milo, Susu, Ais', cost: 1.20, portion: '1 Gelas' },
+            { id: 3, product: 'Kopi O', ingredient: 'Kopi, Gula', cost: 0.80, portion: '1 Gelas' }
+        ];
+
+        const initialSales = [
+            { id: 101, date: '2026-03-24', orderId: 'ORD-001', product: 'Nasi Lemak Ayam', category: 'Food', qty: 15, sellingPrice: 8.00, platform: 'Walk-in' },
+            { id: 102, date: '2026-03-24', orderId: 'ORD-002', product: 'Milo Ais', category: 'Beverage', qty: 20, sellingPrice: 3.00, platform: 'FoodPanda' },
+            { id: 103, date: '2026-03-25', orderId: 'ORD-003', product: 'Nasi Lemak Ayam', category: 'Food', qty: 10, sellingPrice: 8.00, platform: 'GrabFood' }
+        ];
+
+        const initialExpenses = [
+            { id: 1, date: '2026-03-01', category: 'Rental', description: 'Sewa Kedai Bulan Mac', amount: 1500, type: 'Fixed', method: 'Bank Transfer', supplier: 'Syarikat Hartanah', notes: '', receipt: null },
+            { id: 2, date: '2026-03-15', category: 'Stock', description: 'Beli Ayam & Beras', amount: 450, type: 'Variable', method: 'Cash', supplier: 'Pasar Borong', notes: 'Resit disertakan', receipt: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=' }
+        ];
+
+        const initialInventory = [
+            { id: 1, item: 'Beras Wangi (kg)', opening: 50, in: 20, out: 45, unitCost: 3.50 },
+            { id: 2, item: 'Ayam Mentah (ekor)', opening: 30, in: 50, out: 60, unitCost: 15.00 },
+            { id: 3, item: 'Cawan Plastik (pcs)', opening: 500, in: 1000, out: 800, unitCost: 0.10 }
+        ];
+
+        // --- ICONS (SVG) ---
+        const Icons = {
+            Dashboard: ({className="w-5 h-5 mr-3"}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>,
+            Sales: ({className="w-5 h-5 mr-3"}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>,
+            Expenses: ({className="w-5 h-5 mr-3"}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"></path></svg>,
+            COGS: ({className="w-5 h-5 mr-3"}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>,
+            Inventory: ({className="w-5 h-5 mr-3"}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>,
+            Summary: ({className="w-5 h-5 mr-3"}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>,
+        };
+
+        // --- TRANSLATIONS ---
+        const translations = {
+            en: {
+                role: "Role", admin: "Admin", staff: "Staff", restricted: "Restricted Access Mode",
+                dashboard: "Dashboard", sales: "Sales (Income)", expenses: "Expenses", inventory: "Inventory (Stock)", cogs: "COGS", summary: "Profit Summary",
+                
+                sales_desc: "Record daily income and sales.", add_sale: "+ Add New Sale", new_sale: "New Sale Entry",
+                date: "Date", order_id: "Order ID", product: "Product", category: "Category", qty: "Qty", selling_price: "Selling Price (RM)", platform: "Platform",
+                save_record: "Save Record", price: "Price", total_sales: "Total Sales", cost_unit: "Cost/Unit", total_cost: "Total Cost", profit: "Profit", no_sales: "No sales records found.", select_product: "Select Product...",
+                
+                exp_desc: "Record operating expenses, bills, and salary. Can upload receipt image.", add_exp: "+ Add Expense", new_exp: "New Expense Entry",
+                desc: "Description", amount: "Amount (RM)", type: "Type", method: "Payment Method", supplier: "Supplier", notes: "Notes", upload_receipt: "Upload Receipt (Optional)", save_exp: "Save Expense", receipt: "Receipt", view: "View", fixed: "Fixed", variable: "Variable", cash: "Cash", bank: "Bank Transfer", credit: "Credit Card", cheque: "Cheque",
+                
+                cogs_desc: "Cost of Goods Sold settings. Automatically used in Sales calculation.", add_cogs: "+ Add New Product COGS", prod_name: "Product Name", main_ing: "Main Ingredients", total_cost_rm: "Total Cost (RM)", portion: "Portion Yield", save_cogs: "Save COGS",
+                cogs_info: "This data is linked directly to the Sales section. The 'Cost/Unit' value in Sales will take data from this table automatically.",
+                
+                inv_desc: "Manage raw material and product stock.", add_item: "+ Add New Item", item_name: "Item Name", open_stock: "Opening Stock", stock_in: "Stock In (+)", stock_out: "Stock Out (-)", unit_cost: "Unit Cost", unit_cost_rm: "Unit Cost (RM)", save_item: "Save Item", balance: "Balance", total_value: "Total Value",
+                
+                sum_desc: "Monthly Profit Summary Report. Automatically calculated from Sales, COGS, and Expenses sheets.", month: "Month", gross_profit: "Gross Profit", net_profit: "Net Profit", total_exp: "Total Expenses", total_cogs: "Total COGS", no_data: "No data available to generate summary.",
+                
+                kpi_sales: "Total Sales (Income)", roi: "ROI %", sales_by_prod: "Sales by Product", exp_breakdown: "Expenses Breakdown", daily_trend: "Daily Sales Trend", walk_in: "Walk-in"
+            },
+            ms: {
+                role: "Peranan", admin: "Admin", staff: "Staf", restricted: "Mod Akses Terhad",
+                dashboard: "Papan Pemuka", sales: "Jualan (Pendapatan)", expenses: "Perbelanjaan", inventory: "Inventori (Stok)", cogs: "Kos Bahan (COGS)", summary: "Ringkasan Untung",
+                
+                sales_desc: "Rekod pendapatan dan jualan harian.", add_sale: "+ Tambah Jualan", new_sale: "Kemasukan Jualan Baru",
+                date: "Tarikh", order_id: "ID Pesanan", product: "Produk", category: "Kategori", qty: "Kuantiti", selling_price: "Harga Jualan (RM)", platform: "Platform",
+                save_record: "Simpan Rekod", price: "Harga", total_sales: "Jumlah Jualan", cost_unit: "Kos/Unit", total_cost: "Jumlah Kos", profit: "Untung", no_sales: "Tiada rekod jualan ditemui.", select_product: "Pilih Produk...",
+                
+                exp_desc: "Rekodkan perbelanjaan operasi, bil, dan gaji. Boleh muat naik gambar resit.", add_exp: "+ Tambah Perbelanjaan", new_exp: "Kemasukan Perbelanjaan Baru",
+                desc: "Penerangan", amount: "Jumlah (RM)", type: "Jenis", method: "Kaedah Bayaran", supplier: "Pembekal", notes: "Nota", upload_receipt: "Muat Naik Resit (Pilihan)", save_exp: "Simpan Perbelanjaan", receipt: "Resit", view: "Lihat", fixed: "Tetap", variable: "Berubah", cash: "Tunai", bank: "Pindahan Bank", credit: "Kad Kredit", cheque: "Cek",
+                
+                cogs_desc: "Tetapan Kos Barang Dijual (COGS). Digunakan secara automatik dalam pengiraan Jualan.", add_cogs: "+ Tambah COGS Produk", prod_name: "Nama Produk", main_ing: "Bahan Utama", total_cost_rm: "Jumlah Kos (RM)", portion: "Hasil Bahagian", save_cogs: "Simpan COGS",
+                cogs_info: "Data ini dipaut terus ke ruangan Jualan. Nilai 'Kos/Unit' dalam Jualan akan mengambil data dari jadual ini secara automatik.",
+                
+                inv_desc: "Pengurusan stok bahan mentah dan produk.", add_item: "+ Tambah Item Baru", item_name: "Nama Item", open_stock: "Stok Awal", stock_in: "Stok Masuk (+)", stock_out: "Stok Keluar (-)", unit_cost: "Kos Seunit", unit_cost_rm: "Kos Seunit (RM)", save_item: "Simpan Item", balance: "Baki", total_value: "Jumlah Nilai",
+                
+                sum_desc: "Laporan Ringkasan Keuntungan bulanan. Dikira secara automatik dari helaian Jualan, COGS, dan Perbelanjaan.", month: "Bulan", gross_profit: "Untung Kasar", net_profit: "Untung Bersih", total_exp: "Jumlah Perbelanjaan", total_cogs: "Jumlah COGS", no_data: "Tiada data untuk menjana ringkasan.",
+                
+                kpi_sales: "Jumlah Jualan (Pendapatan)", roi: "ROI %", sales_by_prod: "Jualan Mengikut Produk", exp_breakdown: "Pecahan Perbelanjaan", daily_trend: "Trend Jualan Harian", walk_in: "Biasa (Walk-in)"
+            }
+        };
+
+        // --- MAIN APP COMPONENT ---
+        function App() {
+            const [lang, setLang] = useState('ms'); // Default to Bahasa Melayu
+            const [role, setRole] = useState('Admin'); // 'Admin' or 'Staff'
+            const [activeTab, setActiveTab] = useState('dashboard');
+            
+            const t = (key) => translations[lang][key] || key;
+
+            // State
+            const [cogs, setCogs] = useState(initialCogs);
+            const [sales, setSales] = useState(initialSales);
+            const [expenses, setExpenses] = useState(initialExpenses);
+            const [inventory, setInventory] = useState(initialInventory);
+
+            // Helpers for formatting
+            const formatRM = (num) => `RM ${parseFloat(num).toFixed(2)}`;
+
+            // Restrict access
+            useEffect(() => {
+                if (role === 'Staff' && ['dashboard', 'summary', 'cogs'].includes(activeTab)) {
+                    setActiveTab('sales');
+                }
+            }, [role]);
+
+            const tabs = [
+                { id: 'dashboard', label: t('dashboard'), icon: Icons.Dashboard, adminOnly: true },
+                { id: 'sales', label: t('sales'), icon: Icons.Sales, adminOnly: false },
+                { id: 'expenses', label: t('expenses'), icon: Icons.Expenses, adminOnly: false },
+                { id: 'inventory', label: t('inventory'), icon: Icons.Inventory, adminOnly: false },
+                { id: 'cogs', label: t('cogs'), icon: Icons.COGS, adminOnly: true },
+                { id: 'summary', label: t('summary'), icon: Icons.Summary, adminOnly: true },
+            ];
+
+            return (
+                <div className="flex h-screen bg-gray-100 overflow-hidden font-sans flex-col md:flex-row">
+                    {/* Desktop Sidebar (Hidden on Mobile) */}
+                    <div className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col shadow-sm z-10">
+                        <div className="p-6 border-b border-gray-200">
+                            <h1 className="text-xl font-bold text-gray-800">BizManager Pro</h1>
+                            <p className="text-xs text-gray-500 mt-1">Smart Business System</p>
+                        </div>
+                        <div className="flex-1 overflow-y-auto py-4">
+                            <nav className="space-y-1">
+                                {tabs.map(tab => {
+                                    if (role === 'Staff' && tab.adminOnly) return null;
+                                    return (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={`w-full flex items-center px-6 py-3 text-sm transition-colors duration-150 ${activeTab === tab.id ? 'tab-active' : 'tab-inactive'}`}
+                                        >
+                                            <tab.icon />
+                                            {tab.label}
+                                        </button>
+                                    )
+                                })}
+                            </nav>
+                        </div>
+                        <div className="p-4 border-t border-gray-200 bg-gray-50">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-gray-700">{t('role')}</span>
+                                <select 
+                                    value={role} 
+                                    onChange={(e) => setRole(e.target.value)}
+                                    className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 py-1 pl-2 pr-6"
+                                >
+                                    <option value="Admin">{t('admin')}</option>
+                                    <option value="Staff">{t('staff')}</option>
+                                </select>
+                            </div>
+                            {role === 'Staff' && <p className="text-xs text-red-500 mt-2 font-medium">{t('restricted')}</p>}
+                        </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="flex-1 flex flex-col h-full overflow-hidden relative pb-16 md:pb-0">
+                        {/* Top header */}
+                        <header className="bg-white shadow-sm z-10 relative">
+                            <div className="px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+                                <div className="flex justify-between items-center w-full sm:w-auto">
+                                    <h2 className="text-lg md:text-xl font-semibold text-gray-800 uppercase tracking-wide">
+                                        {tabs.find(tab => tab.id === activeTab)?.label}
+                                    </h2>
+                                    {/* Mobile Role Selector */}
+                                    <div className="md:hidden flex items-center bg-gray-50 rounded-md border border-gray-200 px-2 py-1">
+                                        <select 
+                                            value={role} 
+                                            onChange={(e) => setRole(e.target.value)}
+                                            className="text-xs bg-transparent outline-none font-medium text-gray-700"
+                                        >
+                                            <option value="Admin">{t('admin')}</option>
+                                            <option value="Staff">{t('staff')}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between w-full sm:w-auto space-x-0 sm:space-x-4">
+                                    <div className="text-xs md:text-sm text-gray-500">
+                                        {new Date().toLocaleDateString(lang === 'ms' ? 'ms-MY' : 'en-GB', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}
+                                    </div>
+                                    <div className="bg-gray-100 p-1 rounded-md flex space-x-1">
+                                        <button onClick={() => setLang('ms')} className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${lang === 'ms' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>BM</button>
+                                        <button onClick={() => setLang('en')} className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${lang === 'en' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>EN</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </header>
+
+                        {/* Dynamic View */}
+                        <main className="flex-1 overflow-auto p-4 md:p-6 bg-gray-50">
+                            {activeTab === 'dashboard' && <DashboardView sales={sales} expenses={expenses} cogs={cogs} formatRM={formatRM} t={t} />}
+                            {activeTab === 'sales' && <SalesView sales={sales} setSales={setSales} cogs={cogs} formatRM={formatRM} role={role} t={t} />}
+                            {activeTab === 'expenses' && <ExpensesView expenses={expenses} setExpenses={setExpenses} formatRM={formatRM} role={role} t={t} />}
+                            {activeTab === 'inventory' && <InventoryView inventory={inventory} setInventory={setInventory} formatRM={formatRM} role={role} t={t} />}
+                            {activeTab === 'cogs' && <COGSView cogs={cogs} setCogs={setCogs} formatRM={formatRM} t={t} />}
+                            {activeTab === 'summary' && <SummaryView sales={sales} expenses={expenses} cogs={cogs} formatRM={formatRM} t={t} />}
+                        </main>
+
+                        {/* Mobile Bottom Navigation (Visible only on mobile) */}
+                        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-end pb-2 pt-1 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] h-16">
+                            {tabs.map(tab => {
+                                if (role === 'Staff' && tab.adminOnly) return null;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`flex-1 flex flex-col items-center justify-center space-y-1 transition-colors ${activeTab === tab.id ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        <tab.icon className="w-6 h-6" />
+                                        <span className="text-[9px] font-semibold truncate w-full text-center px-1 leading-tight" style={{maxWidth: '65px'}}>
+                                            {tab.label.split(' ')[0]} {/* Shorten label for mobile bottom nav */}
+                                        </span>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 1. SALES VIEW ---
+        function SalesView({ sales, setSales, cogs, formatRM, role, t }) {
+            const [showForm, setShowForm] = useState(false);
+            const [formData, setFormData] = useState({ date: '', orderId: '', product: '', category: '', qty: 1, sellingPrice: 0, platform: 'Walk-in' });
+
+            // Derived Data
+            const enrichedSales = sales.map(s => {
+                const cogsItem = cogs.find(c => c.product === s.product);
+                const costPerUnit = cogsItem ? cogsItem.cost : 0;
+                const totalSales = s.qty * s.sellingPrice;
+                const totalCost = s.qty * costPerUnit;
+                const profit = totalSales - totalCost;
+                return { ...s, costPerUnit, totalSales, totalCost, profit };
+            }).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                setSales([...sales, { ...formData, id: Date.now() }]);
+                setShowForm(false);
+                setFormData({ date: '', orderId: '', product: '', category: '', qty: 1, sellingPrice: 0, platform: 'Walk-in' });
+            };
+
+            const autoFillPrice = (productName) => {
+                // simple mock auto-price based on name for demo
+                const prices = { 'Nasi Lemak Ayam': 8, 'Milo Ais': 3, 'Kopi O': 2.5 };
+                setFormData(prev => ({ ...prev, product: productName, sellingPrice: prices[productName] || 0 }));
+            };
+
+            return (
+                <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+                        <p className="text-gray-600 text-sm">{t('sales_desc')}</p>
+                        <button onClick={() => setShowForm(!showForm)} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 sm:py-2 rounded-md text-sm font-medium shadow-sm transition-colors">
+                            {t('add_sale')}
+                        </button>
+                    </div>
+
+                    {showForm && (
+                        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                            <h3 className="text-lg font-semibold mb-4 text-gray-800">{t('new_sale')}</h3>
+                            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('date')}</label><input required type="date" className="w-full border rounded p-2 text-sm" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('order_id')}</label><input required type="text" placeholder="e.g. ORD-004" className="w-full border rounded p-2 text-sm" value={formData.orderId} onChange={e => setFormData({...formData, orderId: e.target.value})} /></div>
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-1">{t('product')}</label>
+                                    <select required className="w-full border rounded p-2 text-sm" value={formData.product} onChange={e => autoFillPrice(e.target.value)}>
+                                        <option value="">{t('select_product')}</option>
+                                        {cogs.map(c => <option key={c.id} value={c.product}>{c.product}</option>)}
+                                    </select>
+                                </div>
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('category')}</label><input required type="text" className="w-full border rounded p-2 text-sm" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('qty')}</label><input required type="number" min="1" className="w-full border rounded p-2 text-sm" value={formData.qty} onChange={e => setFormData({...formData, qty: parseInt(e.target.value)})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('selling_price')}</label><input required type="number" step="0.01" className="w-full border rounded p-2 text-sm" value={formData.sellingPrice} onChange={e => setFormData({...formData, sellingPrice: parseFloat(e.target.value)})} /></div>
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-1">{t('platform')}</label>
+                                    <select className="w-full border rounded p-2 text-sm" value={formData.platform} onChange={e => setFormData({...formData, platform: e.target.value})}>
+                                        <option>{t('walk_in')}</option><option>FoodPanda</option><option>GrabFood</option><option>ShopeeFood</option>
+                                    </select>
+                                </div>
+                                <div className="flex items-end"><button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded text-sm font-medium">{t('save_record')}</button></div>
+                            </form>
+                        </div>
+                    )}
+
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500">
+                                    <th className="p-3">{t('date')}</th>
+                                    <th className="p-3">{t('order_id')}</th>
+                                    <th className="p-3">{t('product')}</th>
+                                    <th className="p-3 text-center">{t('qty')}</th>
+                                    <th className="p-3 text-right">{t('price')}</th>
+                                    <th className="p-3 text-right">{t('total_sales')}</th>
+                                    <th className="p-3 text-center">{t('platform')}</th>
+                                    {role === 'Admin' && <th className="p-3 text-right bg-yellow-50">{t('cost_unit')}</th>}
+                                    {role === 'Admin' && <th className="p-3 text-right bg-yellow-50">{t('total_cost')}</th>}
+                                    {role === 'Admin' && <th className="p-3 text-right bg-green-50">{t('profit')}</th>}
+                                </tr>
+                            </thead>
+                            <tbody className="text-sm divide-y divide-gray-100">
+                                {enrichedSales.map((s) => (
+                                    <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="p-3 whitespace-nowrap">{s.date}</td>
+                                        <td className="p-3 font-medium text-gray-700">{s.orderId}</td>
+                                        <td className="p-3">{s.product}</td>
+                                        <td className="p-3 text-center">{s.qty}</td>
+                                        <td className="p-3 text-right">{formatRM(s.sellingPrice)}</td>
+                                        <td className="p-3 text-right font-semibold text-blue-600">{formatRM(s.totalSales)}</td>
+                                        <td className="p-3 text-center"><span className="px-2 py-1 bg-gray-100 rounded-full text-xs">{s.platform}</span></td>
+                                        {role === 'Admin' && <td className="p-3 text-right text-gray-500">{formatRM(s.costPerUnit)}</td>}
+                                        {role === 'Admin' && <td className="p-3 text-right text-gray-500">{formatRM(s.totalCost)}</td>}
+                                        {role === 'Admin' && <td className="p-3 text-right font-semibold text-green-600">{formatRM(s.profit)}</td>}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {enrichedSales.length === 0 && <div className="p-8 text-center text-gray-500">{t('no_sales')}</div>}
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 2. EXPENSES VIEW ---
+        function ExpensesView({ expenses, setExpenses, formatRM, role, t }) {
+            const [showForm, setShowForm] = useState(false);
+            const [viewReceipt, setViewReceipt] = useState(null);
+            const [formData, setFormData] = useState({ date: '', category: 'Stock', description: '', amount: 0, type: 'Variable', method: 'Cash', supplier: '', notes: '', receipt: null });
+
+            const categories = ['Stock', 'Packaging', 'Rental', 'Salary', 'Transport', 'Utilities', 'Marketing', 'Other'];
+
+            const handleFileChange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setFormData({ ...formData, receipt: reader.result }); // Save Base64 for demo
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                setExpenses([{ ...formData, id: Date.now() }, ...expenses]);
+                setShowForm(false);
+                setFormData({ date: '', category: 'Stock', description: '', amount: 0, type: 'Variable', method: 'Cash', supplier: '', notes: '', receipt: null });
+            };
+
+            return (
+                <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+                        <p className="text-gray-600 text-sm">{t('exp_desc')}</p>
+                        <button onClick={() => setShowForm(!showForm)} className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 sm:py-2 rounded-md text-sm font-medium shadow-sm transition-colors">
+                            {t('add_exp')}
+                        </button>
+                    </div>
+
+                    {showForm && (
+                        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                            <h3 className="text-lg font-semibold mb-4 text-gray-800">{t('new_exp')}</h3>
+                            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('date')}</label><input required type="date" className="w-full border rounded p-2 text-sm" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-1">{t('category')}</label>
+                                    <select className="w-full border rounded p-2 text-sm" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
+                                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                </div>
+                                <div className="md:col-span-2"><label className="block text-xs text-gray-500 mb-1">{t('desc')}</label><input required type="text" className="w-full border rounded p-2 text-sm" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('amount')}</label><input required type="number" step="0.01" className="w-full border rounded p-2 text-sm" value={formData.amount} onChange={e => setFormData({...formData, amount: parseFloat(e.target.value)})} /></div>
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-1">{t('type')}</label>
+                                    <select className="w-full border rounded p-2 text-sm" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+                                        <option value="Fixed">{t('fixed')}</option><option value="Variable">{t('variable')}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-gray-500 mb-1">{t('method')}</label>
+                                    <select className="w-full border rounded p-2 text-sm" value={formData.method} onChange={e => setFormData({...formData, method: e.target.value})}>
+                                        <option value="Cash">{t('cash')}</option><option value="Bank Transfer">{t('bank')}</option><option value="Credit Card">{t('credit')}</option><option value="Cheque">{t('cheque')}</option>
+                                    </select>
+                                </div>
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('supplier')}</label><input type="text" className="w-full border rounded p-2 text-sm" value={formData.supplier} onChange={e => setFormData({...formData, supplier: e.target.value})} /></div>
+                                <div className="md:col-span-2"><label className="block text-xs text-gray-500 mb-1">{t('notes')}</label><input type="text" className="w-full border rounded p-2 text-sm" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} /></div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-xs text-gray-500 mb-1">{t('upload_receipt')}</label>
+                                    <input type="file" accept="image/*,.pdf" onChange={handleFileChange} className="w-full border rounded p-1.5 text-sm file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                                </div>
+                                <div className="col-span-full mt-2"><button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white p-2 rounded text-sm font-medium">{t('save_exp')}</button></div>
+                            </form>
+                        </div>
+                    )}
+
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500">
+                                    <th className="p-3">{t('date')}</th>
+                                    <th className="p-3">{t('category')}</th>
+                                    <th className="p-3">{t('desc')}</th>
+                                    <th className="p-3">{t('supplier')}</th>
+                                    <th className="p-3 text-right">{t('amount')}</th>
+                                    <th className="p-3 text-center">{t('type')}</th>
+                                    <th className="p-3 text-center">{t('receipt')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-sm divide-y divide-gray-100">
+                                {expenses.map((e) => (
+                                    <tr key={e.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="p-3 whitespace-nowrap">{e.date}</td>
+                                        <td className="p-3"><span className="px-2 py-1 bg-red-50 text-red-700 rounded-full text-xs font-medium">{e.category}</span></td>
+                                        <td className="p-3">{e.description}</td>
+                                        <td className="p-3 text-gray-600">{e.supplier}</td>
+                                        <td className="p-3 text-right font-semibold text-red-600">{formatRM(e.amount)}</td>
+                                        <td className="p-3 text-center text-xs text-gray-500">{t(e.type.toLowerCase()) || e.type}</td>
+                                        <td className="p-3 text-center">
+                                            {e.receipt ? (
+                                                <button onClick={() => setViewReceipt(e.receipt)} className="text-blue-600 hover:underline text-xs flex items-center justify-center w-full">
+                                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg> {t('view')}
+                                                </button>
+                                            ) : <span className="text-gray-400 text-xs">-</span>}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Receipt Modal */}
+                    {viewReceipt && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                            <div className="bg-white p-4 rounded-lg max-w-lg w-full relative">
+                                <button onClick={() => setViewReceipt(null)} className="absolute top-2 right-2 text-gray-500 hover:text-black">✖</button>
+                                <h3 className="text-lg font-semibold mb-4 border-b pb-2">{t('receipt')}</h3>
+                                <div className="flex justify-center bg-gray-100 p-2 rounded border">
+                                    {viewReceipt.startsWith('data:image') ? 
+                                        <img src={viewReceipt} alt="Receipt" className="max-h-96 object-contain" /> :
+                                        <div className="p-10 text-center text-gray-500">Document Uploaded (PDF format not previewable in this demo)</div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // --- 3. COGS VIEW ---
+        function COGSView({ cogs, setCogs, formatRM, t }) {
+            const [showForm, setShowForm] = useState(false);
+            const [formData, setFormData] = useState({ product: '', ingredient: '', cost: 0, portion: '' });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                setCogs([...cogs, { ...formData, id: Date.now() }]);
+                setShowForm(false);
+                setFormData({ product: '', ingredient: '', cost: 0, portion: '' });
+            };
+
+            return (
+                <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 mb-4 sm:mb-6">
+                        <p className="text-gray-600 text-sm">{t('cogs_desc')}</p>
+                        <button onClick={() => setShowForm(!showForm)} className="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2.5 sm:py-2 rounded-md text-sm font-medium shadow-sm transition-colors">
+                            {t('add_cogs')}
+                        </button>
+                    </div>
+
+                    {showForm && (
+                        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 mb-4">
+                            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('prod_name')}</label><input required type="text" className="w-full border rounded p-2 text-sm" value={formData.product} onChange={e => setFormData({...formData, product: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('main_ing')}</label><input required type="text" className="w-full border rounded p-2 text-sm" placeholder="e.g. Flour, Sugar, Egg" value={formData.ingredient} onChange={e => setFormData({...formData, ingredient: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('total_cost_rm')}</label><input required type="number" step="0.01" className="w-full border rounded p-2 text-sm" value={formData.cost} onChange={e => setFormData({...formData, cost: parseFloat(e.target.value)})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('portion')}</label><input required type="text" className="w-full border rounded p-2 text-sm" placeholder="e.g. 1 Plate" value={formData.portion} onChange={e => setFormData({...formData, portion: e.target.value})} /></div>
+                                <div className="col-span-full mt-2"><button type="submit" className="w-full bg-yellow-600 hover:bg-yellow-700 text-white p-2 rounded text-sm font-medium">{t('save_cogs')}</button></div>
+                            </form>
+                        </div>
+                    )}
+
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-yellow-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-700">
+                                    <th className="p-4">{t('prod_name')}</th>
+                                    <th className="p-4">{t('main_ing')}</th>
+                                    <th className="p-4">{t('portion')}</th>
+                                    <th className="p-4 text-right">{t('cost_unit')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-sm divide-y divide-gray-100">
+                                {cogs.map((c) => (
+                                    <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="p-4 font-medium text-gray-800">{c.product}</td>
+                                        <td className="p-4 text-gray-600">{c.ingredient}</td>
+                                        <td className="p-4 text-gray-600">{c.portion}</td>
+                                        <td className="p-4 text-right font-bold text-red-600">{formatRM(c.cost)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mt-4">
+                        <div className="flex">
+                            <div className="flex-shrink-0"><svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg></div>
+                            <div className="ml-3"><p className="text-sm text-blue-700">{t('cogs_info')}</p></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 4. INVENTORY VIEW ---
+        function InventoryView({ inventory, setInventory, formatRM, t }) {
+            const [showForm, setShowForm] = useState(false);
+            const [formData, setFormData] = useState({ item: '', opening: 0, in: 0, out: 0, unitCost: 0 });
+
+            const enrichedInventory = inventory.map(item => {
+                const balance = item.opening + item.in - item.out;
+                const totalValue = balance * item.unitCost;
+                return { ...item, balance, totalValue };
+            });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                setInventory([...inventory, { ...formData, id: Date.now() }]);
+                setShowForm(false);
+                setFormData({ item: '', opening: 0, in: 0, out: 0, unitCost: 0 });
+            };
+
+            const updateStock = (id, field, value) => {
+                const numVal = parseInt(value) || 0;
+                setInventory(inventory.map(item => item.id === id ? { ...item, [field]: numVal } : item));
+            };
+
+            return (
+                <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+                        <p className="text-gray-600 text-sm">{t('inv_desc')}</p>
+                        <button onClick={() => setShowForm(!showForm)} className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 sm:py-2 rounded-md text-sm font-medium shadow-sm transition-colors">
+                            {t('add_item')}
+                        </button>
+                    </div>
+
+                    {showForm && (
+                        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
+                            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('item_name')}</label><input required type="text" className="w-full border rounded p-2 text-sm" value={formData.item} onChange={e => setFormData({...formData, item: e.target.value})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('open_stock')}</label><input required type="number" className="w-full border rounded p-2 text-sm" value={formData.opening} onChange={e => setFormData({...formData, opening: parseInt(e.target.value)})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('stock_in')}</label><input required type="number" className="w-full border rounded p-2 text-sm" value={formData.in} onChange={e => setFormData({...formData, in: parseInt(e.target.value)})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('stock_out')}</label><input required type="number" className="w-full border rounded p-2 text-sm" value={formData.out} onChange={e => setFormData({...formData, out: parseInt(e.target.value)})} /></div>
+                                <div><label className="block text-xs text-gray-500 mb-1">{t('unit_cost_rm')}</label><input required type="number" step="0.01" className="w-full border rounded p-2 text-sm" value={formData.unitCost} onChange={e => setFormData({...formData, unitCost: parseFloat(e.target.value)})} /></div>
+                                <div className="col-span-full"><button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white p-2 rounded text-sm font-medium">{t('save_item')}</button></div>
+                            </form>
+                        </div>
+                    )}
+
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-purple-50 border-b border-gray-200 text-xs uppercase tracking-wider text-purple-800">
+                                    <th className="p-3">{t('item_name')}</th>
+                                    <th className="p-3 text-center">{t('open_stock')}</th>
+                                    <th className="p-3 text-center text-green-700">{t('stock_in')}</th>
+                                    <th className="p-3 text-center text-red-700">{t('stock_out')}</th>
+                                    <th className="p-3 text-center bg-purple-100 rounded-t">{t('balance')}</th>
+                                    <th className="p-3 text-right">{t('unit_cost')}</th>
+                                    <th className="p-3 text-right">{t('total_value')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-sm divide-y divide-gray-100">
+                                {enrichedInventory.map((item) => (
+                                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="p-3 font-medium text-gray-800">{item.item}</td>
+                                        <td className="p-3 text-center text-gray-500">{item.opening}</td>
+                                        <td className="p-3 text-center">
+                                            <input type="number" className="w-16 border rounded text-center p-1 text-sm outline-none focus:ring-1 focus:ring-green-500 bg-green-50 text-green-800 font-medium" value={item.in} onChange={(e) => updateStock(item.id, 'in', e.target.value)} />
+                                        </td>
+                                        <td className="p-3 text-center">
+                                            <input type="number" className="w-16 border rounded text-center p-1 text-sm outline-none focus:ring-1 focus:ring-red-500 bg-red-50 text-red-800 font-medium" value={item.out} onChange={(e) => updateStock(item.id, 'out', e.target.value)} />
+                                        </td>
+                                        <td className={`p-3 text-center font-bold bg-purple-50/50 ${item.balance <= 10 ? 'text-red-600' : 'text-purple-700'}`}>
+                                            {item.balance} {item.balance <= 10 && '⚠️'}
+                                        </td>
+                                        <td className="p-3 text-right text-gray-500">{formatRM(item.unitCost)}</td>
+                                        <td className="p-3 text-right font-semibold text-gray-700">{formatRM(item.totalValue)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 5. PROFIT SUMMARY VIEW ---
+        function SummaryView({ sales, expenses, cogs, formatRM, t }) {
+            // Aggregate Data by Month (YYYY-MM)
+            const summaryData = useMemo(() => {
+                const monthly = {};
+
+                // Process Sales
+                sales.forEach(s => {
+                    const month = s.date.substring(0, 7); // e.g., "2026-03"
+                    if (!monthly[month]) monthly[month] = { month, sales: 0, cogs: 0, expenses: 0 };
+                    
+                    const cogsItem = cogs.find(c => c.product === s.product);
+                    const costPerUnit = cogsItem ? cogsItem.cost : 0;
+                    
+                    monthly[month].sales += (s.qty * s.sellingPrice);
+                    monthly[month].cogs += (s.qty * costPerUnit);
+                });
+
+                // Process Expenses
+                expenses.forEach(e => {
+                    const month = e.date.substring(0, 7);
+                    if (!monthly[month]) monthly[month] = { month, sales: 0, cogs: 0, expenses: 0 };
+                    monthly[month].expenses += e.amount;
+                });
+
+                // Calculate Totals
+                return Object.values(monthly).map(data => {
+                    const grossProfit = data.sales - data.cogs;
+                    const netProfit = grossProfit - data.expenses;
+                    const roi = data.expenses > 0 ? ((netProfit / data.expenses) * 100).toFixed(1) : 0;
+                    return { ...data, grossProfit, netProfit, roi };
+                }).sort((a,b) => b.month.localeCompare(a.month));
+
+            }, [sales, expenses, cogs]);
+
+            const formatMonth = (ym) => {
+                const [y, m] = ym.split('-');
+                const date = new Date(y, parseInt(m)-1);
+                return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+            };
+
+            return (
+                <div className="space-y-4">
+                    <p className="text-gray-600 text-sm mb-6">{t('sum_desc')}</p>
+                    
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-indigo-50 border-b border-gray-200 text-xs uppercase tracking-wider text-indigo-900">
+                                    <th className="p-4">{t('month')}</th>
+                                    <th className="p-4 text-right">{t('total_sales')}</th>
+                                    <th className="p-4 text-right">{t('total_cogs')}</th>
+                                    <th className="p-4 text-right bg-indigo-100">{t('gross_profit')}</th>
+                                    <th className="p-4 text-right text-red-800">{t('total_exp')}</th>
+                                    <th className="p-4 text-right bg-green-100 text-green-900">{t('net_profit')}</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-sm divide-y divide-gray-100">
+                                {summaryData.map((row) => (
+                                    <tr key={row.month} className="hover:bg-gray-50 transition-colors">
+                                        <td className="p-4 font-bold text-gray-800">{formatMonth(row.month)}</td>
+                                        <td className="p-4 text-right text-blue-600 font-medium">{formatRM(row.sales)}</td>
+                                        <td className="p-4 text-right text-gray-600">{formatRM(row.cogs)}</td>
+                                        <td className="p-4 text-right bg-indigo-50/50 font-semibold">{formatRM(row.grossProfit)}</td>
+                                        <td className="p-4 text-right text-red-600">{formatRM(row.expenses)}</td>
+                                        <td className={`p-4 text-right font-bold text-lg ${row.netProfit >= 0 ? 'bg-green-50/50 text-green-600' : 'bg-red-50/50 text-red-600'}`}>
+                                            {formatRM(row.netProfit)}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {summaryData.length === 0 && <tr><td colSpan="6" className="p-8 text-center text-gray-500">{t('no_data')}</td></tr>}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- 6. DASHBOARD VIEW (Charts & KPI) ---
+        function DashboardView({ sales, expenses, cogs, formatRM, t }) {
+            const pieChartRef = useRef(null);
+            const barChartRef = useRef(null);
+            const lineChartRef = useRef(null);
+            
+            // Instances refs to destroy before re-render
+            const pieInstance = useRef(null);
+            const barInstance = useRef(null);
+            const lineInstance = useRef(null);
+
+            // Calculate KPIs
+            const totalSales = useMemo(() => sales.reduce((acc, s) => acc + (s.qty * s.sellingPrice), 0), [sales]);
+            const totalExpenses = useMemo(() => expenses.reduce((acc, e) => acc + e.amount, 0), [expenses]);
+            const totalCogs = useMemo(() => sales.reduce((acc, s) => {
+                const cost = cogs.find(c => c.product === s.product)?.cost || 0;
+                return acc + (s.qty * cost);
+            }, 0), [sales, cogs]);
+            
+            const grossProfit = totalSales - totalCogs;
+            const netProfit = grossProfit - totalExpenses;
+            const roi = totalExpenses > 0 ? ((netProfit / totalExpenses) * 100) : 0;
+
+            useEffect(() => {
+                // Destroy old charts to prevent overlapping issues in React strict mode
+                if (pieInstance.current) pieInstance.current.destroy();
+                if (barInstance.current) barInstance.current.destroy();
+                if (lineInstance.current) lineInstance.current.destroy();
+
+                // 1. Prepare Pie Chart Data (Expenses by Category)
+                const expCats = {};
+                expenses.forEach(e => {
+                    expCats[e.category] = (expCats[e.category] || 0) + e.amount;
+                });
+
+                if (pieChartRef.current) {
+                    pieInstance.current = new Chart(pieChartRef.current, {
+                        type: 'doughnut',
+                        data: {
+                            labels: Object.keys(expCats),
+                            datasets: [{
+                                data: Object.values(expCats),
+                                backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
+                    });
+                }
+
+                // 2. Prepare Bar Chart Data (Sales by Product)
+                const prodSales = {};
+                sales.forEach(s => {
+                    prodSales[s.product] = (prodSales[s.product] || 0) + (s.qty * s.sellingPrice);
+                });
+
+                if (barChartRef.current) {
+                    barInstance.current = new Chart(barChartRef.current, {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(prodSales),
+                            datasets: [{
+                                label: t('total_sales'),
+                                data: Object.values(prodSales),
+                                backgroundColor: '#3b82f6',
+                                borderRadius: 4
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { borderDash: [4, 4] } }, x: { grid: { display: false } } }, plugins: { legend: { display: false } } }
+                    });
+                }
+
+                // 3. Prepare Line Chart Data (Daily Sales Trend)
+                const dailyData = {};
+                sales.forEach(s => {
+                    dailyData[s.date] = (dailyData[s.date] || 0) + (s.qty * s.sellingPrice);
+                });
+                const sortedDates = Object.keys(dailyData).sort();
+                const trendValues = sortedDates.map(d => dailyData[d]);
+
+                if (lineChartRef.current) {
+                    lineInstance.current = new Chart(lineChartRef.current, {
+                        type: 'line',
+                        data: {
+                            labels: sortedDates,
+                            datasets: [{
+                                label: t('daily_trend'),
+                                data: trendValues,
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                tension: 0.3,
+                                fill: true,
+                                pointBackgroundColor: '#10b981'
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, grid: { borderDash: [4, 4] } }, x: { grid: { display: false } } } }
+                    });
+                }
+
+            }, [sales, expenses, cogs, t]); // Re-render charts when data changes
+
+            return (
+                <div className="space-y-6">
+                    {/* KPIs */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex flex-col">
+                            <span className="text-gray-500 text-sm font-medium">{t('kpi_sales')}</span>
+                            <span className="text-2xl font-bold text-blue-600 mt-2">{formatRM(totalSales)}</span>
+                        </div>
+                        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex flex-col">
+                            <span className="text-gray-500 text-sm font-medium">{t('total_exp')}</span>
+                            <span className="text-2xl font-bold text-red-600 mt-2">{formatRM(totalExpenses)}</span>
+                        </div>
+                        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex flex-col border-l-4 border-l-green-500">
+                            <span className="text-gray-500 text-sm font-medium">{t('net_profit')}</span>
+                            <span className={`text-2xl font-bold mt-2 ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {formatRM(netProfit)}
+                            </span>
+                        </div>
+                        <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex flex-col border-l-4 border-l-purple-500">
+                            <div className="flex justify-between items-start">
+                                <span className="text-gray-500 text-sm font-medium">{t('roi')}</span>
+                                <div className="tooltip cursor-help text-gray-400 text-xs" title="(Net Profit ÷ Total Expenses) × 100">ⓘ</div>
+                            </div>
+                            <span className={`text-2xl font-bold mt-2 ${roi >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
+                                {roi.toFixed(1)}%
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Charts */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Bar Chart */}
+                        <div className="bg-white p-4 sm:p-5 rounded-lg shadow-sm border border-gray-100 lg:col-span-2">
+                            <h3 className="text-gray-800 font-semibold text-sm mb-4">{t('sales_by_prod')}</h3>
+                            <div className="h-56 sm:h-64 relative">
+                                <canvas ref={barChartRef}></canvas>
+                            </div>
+                        </div>
+
+                        {/* Pie Chart */}
+                        <div className="bg-white p-4 sm:p-5 rounded-lg shadow-sm border border-gray-100">
+                            <h3 className="text-gray-800 font-semibold text-sm mb-4">{t('exp_breakdown')}</h3>
+                            <div className="h-56 sm:h-64 relative">
+                                <canvas ref={pieChartRef}></canvas>
+                            </div>
+                        </div>
+
+                        {/* Line Chart */}
+                        <div className="bg-white p-4 sm:p-5 rounded-lg shadow-sm border border-gray-100 lg:col-span-3">
+                            <h3 className="text-gray-800 font-semibold text-sm mb-4">{t('daily_trend')}</h3>
+                            <div className="h-56 sm:h-64 relative">
+                                <canvas ref={lineChartRef}></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Render App
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
